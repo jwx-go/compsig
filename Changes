@@ -1,0 +1,8 @@
+Changes
+=======
+
+v4.0.0-alpha1 12 Apr 2026
+  * Initial version. Post-quantum composite signatures for
+    github.com/lestrrat-go/jwx/v4 per draft-ietf-jose-pq-composite-sigs-01.
+    Covers ML-DSA-{44,65,87} paired with ES256/ES384/Ed25519/Ed448 via the
+    AKP JWK key type.
