@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 
 	"filippo.io/mldsa"
 	"github.com/cloudflare/circl/sign/ed448"
@@ -24,14 +23,23 @@ import (
 // draft-ietf-jose-pq-composite-sigs §4.2.
 const Prefix = "CompositeAlgorithmSignatures2025"
 
-// Algorithm accessors return the jwa.SignatureAlgorithm identifiers for each
-// composite variant defined in draft-ietf-jose-pq-composite-sigs.
-func MLDSA44ES256() jwa.SignatureAlgorithm   { return algMLDSA44ES256 }
-func MLDSA65ES256() jwa.SignatureAlgorithm   { return algMLDSA65ES256 }
-func MLDSA87ES384() jwa.SignatureAlgorithm   { return algMLDSA87ES384 }
+// MLDSA44ES256 returns the ML-DSA-44 + ECDSA P-256 composite signature algorithm identifier.
+func MLDSA44ES256() jwa.SignatureAlgorithm { return algMLDSA44ES256 }
+
+// MLDSA65ES256 returns the ML-DSA-65 + ECDSA P-256 composite signature algorithm identifier.
+func MLDSA65ES256() jwa.SignatureAlgorithm { return algMLDSA65ES256 }
+
+// MLDSA87ES384 returns the ML-DSA-87 + ECDSA P-384 composite signature algorithm identifier.
+func MLDSA87ES384() jwa.SignatureAlgorithm { return algMLDSA87ES384 }
+
+// MLDSA44Ed25519 returns the ML-DSA-44 + Ed25519 composite signature algorithm identifier.
 func MLDSA44Ed25519() jwa.SignatureAlgorithm { return algMLDSA44Ed25519 }
+
+// MLDSA65Ed25519 returns the ML-DSA-65 + Ed25519 composite signature algorithm identifier.
 func MLDSA65Ed25519() jwa.SignatureAlgorithm { return algMLDSA65Ed25519 }
-func MLDSA87Ed448() jwa.SignatureAlgorithm   { return algMLDSA87Ed448 }
+
+// MLDSA87Ed448 returns the ML-DSA-87 + Ed448 composite signature algorithm identifier.
+func MLDSA87Ed448() jwa.SignatureAlgorithm { return algMLDSA87Ed448 }
 
 var (
 	algMLDSA44ES256   = jwa.NewSignatureAlgorithm("ML-DSA-44-ES256")
@@ -245,35 +253,19 @@ func generateECDSA(curve elliptic.Curve, r io.Reader) (any, any, error) {
 }
 
 func parseECDSAPriv(curve elliptic.Curve, raw []byte) (any, error) {
-	byteLen := (curve.Params().BitSize + 7) / 8
-	if len(raw) != byteLen {
-		return nil, fmt.Errorf(`compsig: ecdsa priv length %d, want %d`, len(raw), byteLen)
+	sk, err := ecdsa.ParseRawPrivateKey(curve, raw)
+	if err != nil {
+		return nil, fmt.Errorf(`compsig: parse ecdsa priv: %w`, err)
 	}
-	d := new(big.Int).SetBytes(raw)
-	if d.Sign() == 0 || d.Cmp(curve.Params().N) >= 0 {
-		return nil, errors.New(`compsig: ecdsa priv scalar out of range`)
-	}
-	x, y := curve.ScalarBaseMult(raw)
-	return &ecdsa.PrivateKey{
-		PublicKey: ecdsa.PublicKey{Curve: curve, X: x, Y: y},
-		D:         d,
-	}, nil
+	return sk, nil
 }
 
 func parseECDSAPub(curve elliptic.Curve, raw []byte) (any, error) {
-	byteLen := (curve.Params().BitSize + 7) / 8
-	if len(raw) != 1+2*byteLen {
-		return nil, fmt.Errorf(`compsig: ecdsa pub length %d, want %d`, len(raw), 1+2*byteLen)
+	pk, err := ecdsa.ParseUncompressedPublicKey(curve, raw)
+	if err != nil {
+		return nil, fmt.Errorf(`compsig: parse ecdsa pub: %w`, err)
 	}
-	if raw[0] != 0x04 {
-		return nil, fmt.Errorf(`compsig: ecdsa pub first byte %#x, want 0x04 (uncompressed)`, raw[0])
-	}
-	x := new(big.Int).SetBytes(raw[1 : 1+byteLen])
-	y := new(big.Int).SetBytes(raw[1+byteLen:])
-	if !curve.IsOnCurve(x, y) {
-		return nil, errors.New(`compsig: ecdsa pub point not on curve`)
-	}
-	return &ecdsa.PublicKey{Curve: curve, X: x, Y: y}, nil
+	return pk, nil
 }
 
 func marshalECDSAPriv(key any) ([]byte, error) {
@@ -281,11 +273,7 @@ func marshalECDSAPriv(key any) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf(`compsig: expected *ecdsa.PrivateKey, got %T`, key)
 	}
-	byteLen := (sk.Curve.Params().BitSize + 7) / 8
-	out := make([]byte, byteLen)
-	d := sk.D.Bytes()
-	copy(out[byteLen-len(d):], d)
-	return out, nil
+	return sk.Bytes()
 }
 
 func marshalECDSAPub(key any) ([]byte, error) {
@@ -293,14 +281,7 @@ func marshalECDSAPub(key any) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf(`compsig: expected *ecdsa.PublicKey, got %T`, key)
 	}
-	byteLen := (pk.Curve.Params().BitSize + 7) / 8
-	out := make([]byte, 1+2*byteLen)
-	out[0] = 0x04
-	x := pk.X.Bytes()
-	y := pk.Y.Bytes()
-	copy(out[1+byteLen-len(x):1+byteLen], x)
-	copy(out[1+2*byteLen-len(y):], y)
-	return out, nil
+	return pk.Bytes()
 }
 
 func ecdsaPublicFrom(priv any) (any, error) {
@@ -372,7 +353,11 @@ func ed25519PublicFrom(priv any) (any, error) {
 	if !ok {
 		return nil, fmt.Errorf(`compsig: expected ed25519.PrivateKey, got %T`, priv)
 	}
-	return sk.Public().(ed25519.PublicKey), nil
+	pub, ok := sk.Public().(ed25519.PublicKey)
+	if !ok {
+		return nil, errors.New(`compsig: ed25519 public key type mismatch`)
+	}
+	return pub, nil
 }
 
 func ed25519Sign(priv any, mPrime []byte, _ io.Reader) ([]byte, error) {
