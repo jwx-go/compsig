@@ -1,6 +1,7 @@
 package compsig
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
@@ -15,6 +16,7 @@ import (
 
 	"filippo.io/mldsa"
 	"github.com/cloudflare/circl/sign/ed448"
+	"github.com/lestrrat-go/dsig"
 	"github.com/lestrrat-go/jwx/v4/jwa"
 )
 
@@ -181,8 +183,9 @@ func prehashSHAKE256_64(msg []byte) []byte {
 
 // ES256 and ES384 use ASN.1 DER-encoded Ecdsa-Sig-Value per the LAMPS
 // SerializeSignatureValue routine that the JOSE composite draft inherits.
-// This differs from the JWS r||s format, so ECDSA operations bypass jwsbb
-// and call crypto/ecdsa.SignASN1 / VerifyASN1 directly.
+// This differs from the JWS r||s format, so ECDSA operations dispatch through
+// dsig.SignECDSADER / VerifyECDSADER (added in dsig v1.2.2) rather than the
+// jwsbb "ES256"/"ES384" path which produces r||s.
 
 var ecdsaP256Ops = &traditionalOps{
 	pubSize:     65, // 0x04 || X(32) || Y(32)
@@ -193,8 +196,8 @@ var ecdsaP256Ops = &traditionalOps{
 	marshalPriv: marshalECDSAPriv,
 	marshalPub:  marshalECDSAPub,
 	publicFrom:  ecdsaPublicFrom,
-	sign:        func(priv any, m []byte, r io.Reader) ([]byte, error) { return ecdsaSignASN1(priv, m, sha256sum, r) },
-	verify:      func(pub any, m, sig []byte) error { return ecdsaVerifyASN1(pub, m, sig, sha256sum) },
+	sign:        ecdsaDERSigner(crypto.SHA256),
+	verify:      ecdsaDERVerifier(crypto.SHA256),
 }
 
 var ecdsaP384Ops = &traditionalOps{
@@ -206,15 +209,28 @@ var ecdsaP384Ops = &traditionalOps{
 	marshalPriv: marshalECDSAPriv,
 	marshalPub:  marshalECDSAPub,
 	publicFrom:  ecdsaPublicFrom,
-	sign:        func(priv any, m []byte, r io.Reader) ([]byte, error) { return ecdsaSignASN1(priv, m, sha384sum, r) },
-	verify:      func(pub any, m, sig []byte) error { return ecdsaVerifyASN1(pub, m, sig, sha384sum) },
+	sign:        ecdsaDERSigner(crypto.SHA384),
+	verify:      ecdsaDERVerifier(crypto.SHA384),
 }
 
-func sha256sum(b []byte) []byte { h := sha256.Sum256(b); return h[:] }
+func ecdsaDERSigner(h crypto.Hash) func(priv any, mPrime []byte, r io.Reader) ([]byte, error) {
+	return func(priv any, mPrime []byte, r io.Reader) ([]byte, error) {
+		sk, ok := priv.(*ecdsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf(`compsig: expected *ecdsa.PrivateKey, got %T`, priv)
+		}
+		return dsig.SignECDSADER(sk, mPrime, h, r)
+	}
+}
 
-func sha384sum(b []byte) []byte {
-	h := sha512.Sum384(b)
-	return h[:]
+func ecdsaDERVerifier(h crypto.Hash) func(pub any, mPrime, sig []byte) error {
+	return func(pub any, mPrime, sig []byte) error {
+		pk, ok := pub.(*ecdsa.PublicKey)
+		if !ok {
+			return fmt.Errorf(`compsig: expected *ecdsa.PublicKey, got %T`, pub)
+		}
+		return dsig.VerifyECDSADER(pk, mPrime, sig, h)
+	}
 }
 
 func generateECDSA(curve elliptic.Curve, r io.Reader) (any, any, error) {
@@ -293,28 +309,6 @@ func ecdsaPublicFrom(priv any) (any, error) {
 		return nil, fmt.Errorf(`compsig: expected *ecdsa.PrivateKey, got %T`, priv)
 	}
 	return &sk.PublicKey, nil
-}
-
-func ecdsaSignASN1(priv any, mPrime []byte, hash func([]byte) []byte, r io.Reader) ([]byte, error) {
-	sk, ok := priv.(*ecdsa.PrivateKey)
-	if !ok {
-		return nil, fmt.Errorf(`compsig: expected *ecdsa.PrivateKey, got %T`, priv)
-	}
-	if r == nil {
-		r = rand.Reader
-	}
-	return ecdsa.SignASN1(r, sk, hash(mPrime))
-}
-
-func ecdsaVerifyASN1(pub any, mPrime, sig []byte, hash func([]byte) []byte) error {
-	pk, ok := pub.(*ecdsa.PublicKey)
-	if !ok {
-		return fmt.Errorf(`compsig: expected *ecdsa.PublicKey, got %T`, pub)
-	}
-	if !ecdsa.VerifyASN1(pk, hash(mPrime), sig) {
-		return errors.New(`compsig: ecdsa signature invalid`)
-	}
-	return nil
 }
 
 // --- Traditional operations: Ed25519 (stdlib) ---

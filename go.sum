@@ -10,6 +10,8 @@ github.com/jwx-go/mldsa/v4 v4.0.0-alpha1 h1:8K+TS9k55t1MusqB9XIJVMz+8FhZuMSNlJ1Z
 github.com/jwx-go/mldsa/v4 v4.0.0-alpha1/go.mod h1:7FxYDHMLJ0mWT6/hc39bFMIX6aAiNYx23EGKswkQv5A=
 github.com/lestrrat-go/dsig v1.2.1 h1:MwxzZhE4+4fguHi+uDALKVlC3Cn+O1QU1Q/F8D7hVIc=
 github.com/lestrrat-go/dsig v1.2.1/go.mod h1:RD2eOaidyPvpc7IJQoO3Qq52RWdy8ZcJs8lrOnoa1Kc=
+github.com/lestrrat-go/dsig v1.2.2 h1:CdlTKX9H1GiPlU7WILGxds+wb41KkPnyyqvt57PRE2M=
+github.com/lestrrat-go/dsig v1.2.2/go.mod h1:RD2eOaidyPvpc7IJQoO3Qq52RWdy8ZcJs8lrOnoa1Kc=
 github.com/lestrrat-go/dsig-circl-ed448 v1.0.0 h1:VijftNGJryFdDVhmrLMhxdKCRPK0VLGLJOy0C3i/Gso=
 github.com/lestrrat-go/dsig-circl-ed448 v1.0.0/go.mod h1:qhO/4wWfOPXbIB8rtbwUf4MA6SnTADBRZI1iZaWYj1Y=
 github.com/lestrrat-go/jwx/v4 v4.0.0-scratch.14 h1:PKw47tHXyLySApp3pPErMFJ8a7R1lQeSJCPMxfFTX1k=
