@@ -24,14 +24,23 @@ import (
 // draft-ietf-jose-pq-composite-sigs §4.2.
 const Prefix = "CompositeAlgorithmSignatures2025"
 
-// Algorithm accessors return the jwa.SignatureAlgorithm identifiers for each
-// composite variant defined in draft-ietf-jose-pq-composite-sigs.
-func MLDSA44ES256() jwa.SignatureAlgorithm   { return algMLDSA44ES256 }
-func MLDSA65ES256() jwa.SignatureAlgorithm   { return algMLDSA65ES256 }
-func MLDSA87ES384() jwa.SignatureAlgorithm   { return algMLDSA87ES384 }
+// MLDSA44ES256 returns the ML-DSA-44 + ECDSA P-256 composite signature algorithm identifier.
+func MLDSA44ES256() jwa.SignatureAlgorithm { return algMLDSA44ES256 }
+
+// MLDSA65ES256 returns the ML-DSA-65 + ECDSA P-256 composite signature algorithm identifier.
+func MLDSA65ES256() jwa.SignatureAlgorithm { return algMLDSA65ES256 }
+
+// MLDSA87ES384 returns the ML-DSA-87 + ECDSA P-384 composite signature algorithm identifier.
+func MLDSA87ES384() jwa.SignatureAlgorithm { return algMLDSA87ES384 }
+
+// MLDSA44Ed25519 returns the ML-DSA-44 + Ed25519 composite signature algorithm identifier.
 func MLDSA44Ed25519() jwa.SignatureAlgorithm { return algMLDSA44Ed25519 }
+
+// MLDSA65Ed25519 returns the ML-DSA-65 + Ed25519 composite signature algorithm identifier.
 func MLDSA65Ed25519() jwa.SignatureAlgorithm { return algMLDSA65Ed25519 }
-func MLDSA87Ed448() jwa.SignatureAlgorithm   { return algMLDSA87Ed448 }
+
+// MLDSA87Ed448 returns the ML-DSA-87 + Ed448 composite signature algorithm identifier.
+func MLDSA87Ed448() jwa.SignatureAlgorithm { return algMLDSA87Ed448 }
 
 var (
 	algMLDSA44ES256   = jwa.NewSignatureAlgorithm("ML-DSA-44-ES256")
@@ -372,7 +381,11 @@ func ed25519PublicFrom(priv any) (any, error) {
 	if !ok {
 		return nil, fmt.Errorf(`compsig: expected ed25519.PrivateKey, got %T`, priv)
 	}
-	return sk.Public().(ed25519.PublicKey), nil
+	pub, ok := sk.Public().(ed25519.PublicKey)
+	if !ok {
+		return nil, errors.New(`compsig: ed25519 public key type mismatch`)
+	}
+	return pub, nil
 }
 
 func ed25519Sign(priv any, mPrime []byte, _ io.Reader) ([]byte, error) {
