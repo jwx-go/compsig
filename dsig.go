@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/lestrrat-go/jwx/v4/jws/jwsbb"
+	"filippo.io/mldsa"
 )
 
 // compSigDsig implements dsig.Signer and dsig.Verifier for one composite
@@ -27,10 +27,12 @@ func (d *compSigDsig) Sign(key any, payload []byte, r io.Reader) ([]byte, error)
 
 	mPrime := composeMessage(d.info, payload)
 
-	// ML-DSA component: dispatch through jwsbb so the underlying
-	// jwx-go/mldsa dsig impl does the work. This avoids duplicating the
-	// filippo.io/mldsa adapter here.
-	mldsaSig, err := jwsbb.Sign(sk.mldsa, d.info.mldsaAlgName, mPrime, r)
+	// ML-DSA component: call filippo.io/mldsa directly so we can supply
+	// ctx=Label as required by draft-ietf-jose-pq-composite-sigs §4.2 step 3.
+	// Going through jwsbb / jwx-go/mldsa would lose the context (its
+	// Sign hard-codes ctx=nil), and the resulting signature would not be
+	// interoperable with any spec-compliant implementation.
+	mldsaSig, err := sk.mldsa.Sign(r, mPrime, &mldsa.Options{Context: string(d.info.label)})
 	if err != nil {
 		return nil, fmt.Errorf(`compsig: ml-dsa sign: %w`, err)
 	}
@@ -39,8 +41,7 @@ func (d *compSigDsig) Sign(key any, payload []byte, r io.Reader) ([]byte, error)
 	}
 
 	// Traditional component: ECDSA uses direct crypto/ecdsa to emit DER
-	// (per LAMPS); Ed25519/Ed448 use the registered jwsbb dispatch via
-	// their respective companion modules.
+	// (per LAMPS); Ed25519 uses stdlib; Ed448 uses cloudflare/circl.
 	tradSig, err := d.info.trad.sign(sk.trad, mPrime, r)
 	if err != nil {
 		return nil, fmt.Errorf(`compsig: traditional sign: %w`, err)
@@ -65,7 +66,8 @@ func (d *compSigDsig) Verify(key any, payload, signature []byte) error {
 	mldsaSig := signature[:d.info.mldsaSigSize]
 	tradSig := signature[d.info.mldsaSigSize:]
 
-	if err := jwsbb.Verify(pk.mldsa, d.info.mldsaAlgName, mPrime, mldsaSig); err != nil {
+	// Same context as Sign: required by the draft and by filippo.io/mldsa.
+	if err := mldsa.Verify(pk.mldsa, mPrime, mldsaSig, &mldsa.Options{Context: string(d.info.label)}); err != nil {
 		return fmt.Errorf(`compsig: ml-dsa verify: %w`, err)
 	}
 	if err := d.info.trad.verify(pk.trad, mPrime, tradSig); err != nil {
