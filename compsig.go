@@ -35,6 +35,11 @@
 // ECDSA and Ed25519 components are handled directly via crypto/ecdsa and
 // crypto/ed25519 — ECDSA because the composite format demands ASN.1 DER
 // Ecdsa-Sig-Value (per LAMPS) rather than the JOSE r||s encoding.
+//
+// Registration happens in init(). If any underlying jwx Register* call
+// returns an error, init() panics — importing this package will crash the
+// program at load time. This is the house style across all jwx-go extension
+// modules.
 package compsig
 
 import (
@@ -55,30 +60,37 @@ import (
 func init() {
 	// Register the six composite algorithms in jwa.
 	for _, info := range compSigAlgs {
-		jwa.RegisterSignatureAlgorithm(info.alg)
-		jws.RegisterAlgorithmForKeyType(jwa.AKP(), info.alg)
+		panicOnRegistrationError(jwa.RegisterSignatureAlgorithm(info.alg))
+		panicOnRegistrationError(jws.RegisterAlgorithmForKeyType(jwa.AKP(), info.alg))
 
 		if err := dsig.RegisterAlgorithm(info.name, dsig.AlgorithmInfo{
 			Family: dsig.Custom,
 			Meta:   &compSigDsig{info: info},
 		}); err != nil {
-			panic(fmt.Sprintf("compsig: dsig RegisterAlgorithm %s: %s", info.name, err))
+			panic(fmt.Sprintf("jwx-go/compsig: dsig RegisterAlgorithm %s: %s", info.name, err))
 		}
-		jwsbb.RegisterDsigAlgorithm(info.name, info.name)
+		panicOnRegistrationError(jwsbb.RegisterDsigAlgorithm(info.name, info.name))
 
-		if err := jws.RegisterSigner(info.alg, &compSigSigner{info: info}); err != nil {
-			panic(fmt.Sprintf("compsig: jws RegisterSigner %s: %s", info.name, err))
-		}
-		if err := jws.RegisterVerifier(info.alg, &compSigVerifier{info: info}); err != nil {
-			panic(fmt.Sprintf("compsig: jws RegisterVerifier %s: %s", info.name, err))
-		}
+		panicOnRegistrationError(jws.RegisterSigner(info.alg, &compSigSigner{info: info}))
+		panicOnRegistrationError(jws.RegisterVerifier(info.alg, &compSigVerifier{info: info}))
 
 		// AKP keys report KeyKind "AKP:<alg>", so the exporter is registered
 		// per algorithm. The plain "AKP" fallback is handled by jwx-go/mldsa
 		// for pure ML-DSA and by jwx core for ML-KEM.
-		jwk.RegisterKeyExporter(jwk.KeyKind("AKP:"+info.name), jwk.KeyExportFunc(exportKey))
+		panicOnRegistrationError(jwk.RegisterKeyExporter(jwk.KeyKind("AKP:"+info.name), jwk.KeyExportFunc(exportKey)))
 	}
 
-	jwk.RegisterKeyImporter(importPrivateKey)
-	jwk.RegisterKeyImporter(importPublicKey)
+	panicOnRegistrationError(jwk.RegisterKeyImporter(importPrivateKey))
+	panicOnRegistrationError(jwk.RegisterKeyImporter(importPublicKey))
+}
+
+// panicOnRegistrationError converts a non-nil error returned by a jwx
+// Register* call during init() into an import-time panic. The rule
+// (documented in jwx's internals.md) is that a failed Register* leaves
+// the extension unusable, so we surface it immediately instead of
+// letting the program continue in a broken state.
+func panicOnRegistrationError(err error) {
+	if err != nil {
+		panic(fmt.Sprintf("jwx-go/compsig: registration failed: %s", err))
+	}
 }
