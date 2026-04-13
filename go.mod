@@ -8,7 +8,7 @@ require (
 	github.com/jwx-go/ed448/v4 v4.0.0-alpha3
 	github.com/jwx-go/mldsa/v4 v4.0.0-alpha1
 	github.com/lestrrat-go/dsig v1.2.2
-	github.com/lestrrat-go/jwx/v4 v4.0.0-scratch.14
+	github.com/lestrrat-go/jwx/v4 v4.0.0-scratch.15
 	github.com/stretchr/testify v1.11.1
 )
 
