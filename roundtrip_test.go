@@ -119,6 +119,35 @@ func TestTamperedMLDSAHalfFails(t *testing.T) {
 	}
 }
 
+func TestSignerRejectsMismatchedPub(t *testing.T) {
+	// Regression: the signer must refuse to sign with a JWK whose "pub"
+	// field disagrees with the public half derived from "priv". The
+	// exporter already enforces this; the signer used to not.
+	for _, alg := range allAlgs() {
+		t.Run(alg.String(), func(t *testing.T) {
+			sk, err := compsig.GenerateKey(alg)
+			require.NoError(t, err)
+
+			privJWK, err := jwk.Import[jwk.Key](sk)
+			require.NoError(t, err)
+
+			pubV, ok := privJWK.Field(jwk.AKPPubKey)
+			require.True(t, ok)
+			pubBytes, ok := pubV.([]byte)
+			require.True(t, ok)
+
+			// Flip a single byte in "pub" to break the pub/priv binding
+			// without changing its length.
+			tampered := append([]byte(nil), pubBytes...)
+			tampered[0] ^= 0x01
+			require.NoError(t, privJWK.Set(jwk.AKPPubKey, tampered))
+
+			_, err = jws.Sign([]byte(testPayload), jws.WithKey(alg, privJWK))
+			require.Error(t, err, "signer must reject JWK with mismatched pub")
+		})
+	}
+}
+
 func findNthDot(s []byte, n int) int {
 	count := 0
 	for i, c := range s {
