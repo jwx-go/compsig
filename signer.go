@@ -1,6 +1,7 @@
 package compsig
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/lestrrat-go/jwx/v4/jwa"
@@ -49,7 +50,30 @@ func extractCompositePriv(info *algInfo, key any) (*PrivateKey, error) {
 		if !ok {
 			return nil, fmt.Errorf(`"priv" field is not []byte`)
 		}
-		return newPrivateKeyForInfo(info, privBytes)
+		sk, err := newPrivateKeyForInfo(info, privBytes)
+		if err != nil {
+			return nil, err
+		}
+		// Mirror exportKey's cross-check: if the JWK carries a "pub" field,
+		// it must match the public half derived from "priv". Otherwise the
+		// signer would happily sign under a JWK whose advertised public key
+		// disagrees with the private key, producing signatures that other
+		// consumers of the same JWK (thumbprints, key-ID lookups, published
+		// JWKS) cannot match back.
+		if pubV, hasPub := k.Field(jwk.AKPPubKey); hasPub {
+			pubBytes, ok := pubV.([]byte)
+			if !ok {
+				return nil, fmt.Errorf(`"pub" field is not []byte`)
+			}
+			derivedPub, err := sk.Public().MarshalBinary()
+			if err != nil {
+				return nil, fmt.Errorf(`derive pub: %w`, err)
+			}
+			if !bytes.Equal(derivedPub, pubBytes) {
+				return nil, fmt.Errorf(`"pub" does not match derived public key`)
+			}
+		}
+		return sk, nil
 	default:
 		return nil, fmt.Errorf(`%w: %T`, errUnsupportedKey, key)
 	}
