@@ -42,8 +42,9 @@ func (d *compSigDsig) Sign(key any, payload []byte, r io.Reader) ([]byte, error)
 		return nil, fmt.Errorf(`compsig: ml-dsa sign returned %d bytes, want %d`, len(mldsaSig), d.info.mldsaSigSize)
 	}
 
-	// Traditional component: ECDSA uses direct crypto/ecdsa to emit DER
-	// (per LAMPS); Ed25519 uses stdlib; Ed448 uses cloudflare/circl.
+	// Traditional component: always pass the caller's entropy source through.
+	// Randomized variants such as ECDSA must consume it; deterministic variants
+	// such as Ed25519 and Ed448 document that they intentionally ignore it.
 	tradSig, err := d.info.trad.sign(sk.trad, mPrime, r)
 	if err != nil {
 		return nil, fmt.Errorf(`compsig: traditional sign: %w`, err)

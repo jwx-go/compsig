@@ -52,6 +52,11 @@ var (
 
 // traditionalOps encapsulates the per-algorithm operations for the "T" half
 // of a composite ML-DSA + T signature.
+//
+// The sign hook receives the caller-supplied entropy source from
+// compSigDsig.Sign. Randomized traditional algorithms must consume r,
+// defaulting to rand.Reader only when r == nil. Deterministic algorithms may
+// ignore r.
 type traditionalOps struct {
 	pubSize  int // marshaled public key size
 	privSize int // marshaled private key size
@@ -365,6 +370,8 @@ func ed25519Sign(priv any, mPrime []byte, _ io.Reader) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf(`compsig: expected ed25519.PrivateKey, got %T`, priv)
 	}
+	// Ed25519 is deterministic, so the caller-provided entropy source is
+	// intentionally unused here.
 	return ed25519.Sign(sk, mPrime), nil
 }
 
@@ -452,7 +459,8 @@ func ed448Sign(priv any, mPrime []byte, _ io.Reader) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf(`compsig: expected ed448.PrivateKey, got %T`, priv)
 	}
-	// circl Ed448: context must be empty for the composite construction.
+	// Ed448 is deterministic in this construction, so r is intentionally
+	// unused. circl Ed448 also requires the context to be empty here.
 	return ed448.Sign(sk, mPrime, ""), nil
 }
 
