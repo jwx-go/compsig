@@ -43,14 +43,14 @@ func TestRoundTripJWK(t *testing.T) {
 			privJSON, err := json.Marshal(privJWK)
 			require.NoError(t, err, "json.Marshal private")
 
-			privParsed, err := jwk.ParseKey[jwk.Key](privJSON)
+			privParsed, err := jwk.ParseKeyAs[jwk.Key](privJSON)
 			require.NoError(t, err, "jwk.ParseKey private")
 
 			pubJWK, err := privJWK.PublicKey()
 			require.NoError(t, err, "PublicKey")
 			pubJSON, err := json.Marshal(pubJWK)
 			require.NoError(t, err, "json.Marshal public")
-			pubParsed, err := jwk.ParseKey[jwk.Key](pubJSON)
+			pubParsed, err := jwk.ParseKeyAs[jwk.Key](pubJSON)
 			require.NoError(t, err, "jwk.ParseKey public")
 
 			signed, err := jws.Sign([]byte(testPayload), jws.WithKey(alg, privParsed))
