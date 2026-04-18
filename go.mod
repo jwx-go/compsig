@@ -5,10 +5,10 @@ go 1.26.0
 require (
 	filippo.io/mldsa v0.0.0-20260215214346-43d0283efc3e
 	github.com/cloudflare/circl v1.6.3
-	github.com/jwx-go/ed448/v4 v4.0.0-alpha4
-	github.com/jwx-go/mldsa/v4 v4.0.0-alpha3
+	github.com/jwx-go/ed448/v4 v4.0.0-alpha4.0.20260418154207-8f0c34fe58b3
+	github.com/jwx-go/mldsa/v4 v4.0.0-alpha3.0.20260418154336-fafeb603817c
 	github.com/lestrrat-go/dsig v1.3.0
-	github.com/lestrrat-go/jwx/v4 v4.0.0-scratch.18
+	github.com/lestrrat-go/jwx/v4 v4.0.0-scratch.27
 	github.com/stretchr/testify v1.11.1
 )
 
