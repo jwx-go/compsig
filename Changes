@@ -1,6 +1,10 @@
 Changes
 =======
 
+v4.0.0 19 Apr 2026
+  * First stable v4 release. Tracks github.com/lestrrat-go/jwx/v4 v4.0.0,
+    github.com/jwx-go/ed448/v4 v4.0.0, and github.com/jwx-go/mldsa/v4 v4.0.0.
+
 v4.0.0-alpha1 13 Apr 2026
   * Initial version. Post-quantum composite signatures for
     github.com/lestrrat-go/jwx/v4 per draft-ietf-jose-pq-composite-sigs-01.
