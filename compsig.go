@@ -80,8 +80,8 @@ func init() {
 		panicOnRegistrationError(jwk.RegisterKeyExporter(jwk.KeyKind("AKP:"+info.name), jwk.KeyExportFunc(exportKey)))
 	}
 
-	panicOnRegistrationError(jwk.RegisterKeyImporter(importPrivateKey))
-	panicOnRegistrationError(jwk.RegisterKeyImporter(importPublicKey))
+	panicOnRegistrationError(jwk.RegisterKeyImporter(jwk.KeyImportFunc[*PrivateKey](importPrivateKey)))
+	panicOnRegistrationError(jwk.RegisterKeyImporter(jwk.KeyImportFunc[*PublicKey](importPublicKey)))
 }
 
 // panicOnRegistrationError converts a non-nil error returned by a jwx
