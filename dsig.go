@@ -69,6 +69,26 @@ func (d *compSigDsig) Verify(key any, payload, signature []byte) error {
 	mldsaSig := signature[:d.info.mldsaSigSize]
 	tradSig := signature[d.info.mldsaSigSize:]
 
+	// Defense-in-depth gate on the trailing component length. Every
+	// in-tree traditional verifier rejects wrong-length input, but
+	// without this gate a future variant whose verifier ignores
+	// trailing bytes would let `mldsaSig || tradSig || JUNK` verify
+	// and amplify a forgery. See traditionalOps.sigSize/sigMaxSize.
+	if d.info.trad.sigSize > 0 {
+		// Fixed-length variant (Ed25519, Ed448).
+		if len(tradSig) != d.info.trad.sigSize {
+			return fmt.Errorf(`compsig: traditional signature length %d does not match expected %d for %s`, len(tradSig), d.info.trad.sigSize, d.info.name)
+		}
+	} else {
+		// Variable-length DER (ECDSA-P256, ECDSA-P384).
+		if len(tradSig) == 0 {
+			return fmt.Errorf(`compsig: traditional signature is empty for %s`, d.info.name)
+		}
+		if d.info.trad.sigMaxSize > 0 && len(tradSig) > d.info.trad.sigMaxSize {
+			return fmt.Errorf(`compsig: traditional signature length %d exceeds maximum %d for %s`, len(tradSig), d.info.trad.sigMaxSize, d.info.name)
+		}
+	}
+
 	// Same ctx=Label as Sign — see Sign for the rationale.
 	if err := jwsbb.VerifyWithOpts(pk.mldsa, d.info.mldsaAlgName, mPrime, mldsaSig, &mldsa.Options{Context: string(d.info.label)}); err != nil {
 		return fmt.Errorf(`compsig: ml-dsa verify: %w`, err)
