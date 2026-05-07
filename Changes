@@ -1,6 +1,16 @@
 Changes
 =======
 
+v4.0.2 7 May 2026
+  * `jws.Verify` rejects composite signatures whose trailing
+    (traditional) component falls outside the variant's expected
+    length: an exact match for fixed-length variants (Ed25519,
+    Ed448) and a maximum DER bound for ECDSA-DER (P-256, P-384).
+    Defense-in-depth: every traditional verifier in the table is
+    already strict about length, but a future variant whose
+    verifier ignored trailing bytes would otherwise let
+    `mldsaSig || tradSig || JUNK` verify and amplify a forgery.
+
 v4.0.1 28 Apr 2026
   * CI maintenance: bump actions/cache to 5.0.5.
 
