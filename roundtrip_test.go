@@ -1,9 +1,12 @@
 package compsig_test
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"testing"
 
+	"filippo.io/mldsa"
 	compsig "github.com/jwx-go/compsig/v4"
 	"github.com/lestrrat-go/jwx/v4/jwa"
 	"github.com/lestrrat-go/jwx/v4/jwk"
@@ -160,4 +163,111 @@ func findNthDot(s []byte, n int) int {
 		}
 	}
 	return -1
+}
+
+// retampedSignature replaces the signature segment of a compact JWS
+// with the supplied raw bytes (re-encoded as base64url-without-padding).
+// Returns the rewritten JWS.
+func retampedSignature(t *testing.T, signed, newSigBytes []byte) []byte {
+	t.Helper()
+	secondDot := findNthDot(signed, 2)
+	require.Greater(t, secondDot, 0, "JWS must have at least two dots")
+	prefix := append([]byte(nil), signed[:secondDot+1]...)
+	return append(prefix, []byte(base64.RawURLEncoding.EncodeToString(newSigBytes))...)
+}
+
+// rawSignature decodes the JWS signature segment back to the raw
+// (mldsaSig || tradSig) bytes.
+func rawSignature(t *testing.T, signed []byte) []byte {
+	t.Helper()
+	secondDot := findNthDot(signed, 2)
+	require.Greater(t, secondDot, 0)
+	raw, err := base64.RawURLEncoding.DecodeString(string(signed[secondDot+1:]))
+	require.NoError(t, err)
+	return raw
+}
+
+// TestTradSigLengthGate pins the composite-layer length check on the
+// trailing component. The check is defense-in-depth: every in-tree
+// traditional verifier rejects wrong-length input, but a future
+// variant whose verifier ignores trailing bytes would let
+// `mldsaSig || tradSig || JUNK` verify and amplify a forgery.
+func TestTradSigLengthGate(t *testing.T) {
+	t.Run("Ed25519 (fixed): truncated tradSig rejected", func(t *testing.T) {
+		alg := compsig.MLDSA44Ed25519()
+		sk, err := compsig.GenerateKey(alg)
+		require.NoError(t, err)
+
+		signed, err := jws.Sign([]byte(testPayload), jws.WithKey(alg, sk))
+		require.NoError(t, err)
+
+		raw := rawSignature(t, signed)
+		// Drop the last byte of tradSig; len(tradSig) becomes 63
+		// instead of the required 64.
+		tampered := retampedSignature(t, signed, raw[:len(raw)-1])
+
+		_, err = jws.Verify(tampered, jws.WithKey(alg, sk.Public()))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match expected",
+			"composite layer must reject wrong-length Ed25519 tradSig")
+	})
+
+	t.Run("Ed25519 (fixed): oversize tradSig rejected", func(t *testing.T) {
+		alg := compsig.MLDSA44Ed25519()
+		sk, err := compsig.GenerateKey(alg)
+		require.NoError(t, err)
+
+		signed, err := jws.Sign([]byte(testPayload), jws.WithKey(alg, sk))
+		require.NoError(t, err)
+
+		raw := rawSignature(t, signed)
+		// Append a junk byte to push tradSig past 64.
+		tampered := retampedSignature(t, signed, append(append([]byte(nil), raw...), 0xff))
+
+		_, err = jws.Verify(tampered, jws.WithKey(alg, sk.Public()))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match expected")
+	})
+
+	t.Run("ECDSA P-256 (variable): empty tradSig rejected", func(t *testing.T) {
+		alg := compsig.MLDSA44ES256()
+		sk, err := compsig.GenerateKey(alg)
+		require.NoError(t, err)
+
+		signed, err := jws.Sign([]byte(testPayload), jws.WithKey(alg, sk))
+		require.NoError(t, err)
+
+		mldsaSize := mldsa.MLDSA44().SignatureSize()
+		raw := rawSignature(t, signed)
+		require.Len(t, raw, mldsaSize+len(raw)-mldsaSize) // sanity
+		require.Greater(t, len(raw), mldsaSize)
+
+		// Truncate to exactly mldsaSigSize: empty tradSig.
+		tampered := retampedSignature(t, signed, raw[:mldsaSize])
+
+		_, err = jws.Verify(tampered, jws.WithKey(alg, sk.Public()))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "is empty",
+			"composite layer must reject empty ECDSA tradSig")
+	})
+
+	t.Run("ECDSA P-256 (variable): oversize tradSig rejected", func(t *testing.T) {
+		alg := compsig.MLDSA44ES256()
+		sk, err := compsig.GenerateKey(alg)
+		require.NoError(t, err)
+
+		signed, err := jws.Sign([]byte(testPayload), jws.WithKey(alg, sk))
+		require.NoError(t, err)
+
+		// Append 100 bytes of junk to push tradSig past the 72-byte
+		// P-256 maximum.
+		raw := rawSignature(t, signed)
+		oversize := append(append([]byte(nil), raw...), bytes.Repeat([]byte{0xff}, 100)...)
+		tampered := retampedSignature(t, signed, oversize)
+
+		_, err = jws.Verify(tampered, jws.WithKey(alg, sk.Public()))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "exceeds maximum",
+			"composite layer must reject oversized ECDSA tradSig")
+	})
 }

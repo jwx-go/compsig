@@ -61,6 +61,25 @@ type traditionalOps struct {
 	pubSize  int // marshaled public key size
 	privSize int // marshaled private key size
 
+	// sigSize / sigMaxSize gate the trailing component length in
+	// compSigDsig.Verify before dispatching to the inner verifier.
+	//
+	// For fixed-length signature schemes (Ed25519, Ed448), sigSize is
+	// the exact required length and sigMaxSize equals sigSize: any
+	// other length is rejected. For variable-length DER-encoded ECDSA,
+	// sigSize is 0 and sigMaxSize is the maximum DER-encoded
+	// Ecdsa-Sig-Value length per curve; the verifier accepts (0,
+	// sigMaxSize].
+	//
+	// The composite layer's check is defense-in-depth: every
+	// traditional verifier in this table also rejects wrong lengths,
+	// but a future variant whose verifier is less strict (or a
+	// dsig-backend swap) would otherwise turn an unbounded suffix into
+	// a forgery-amplification primitive — `mldsaSig || tradSig ||
+	// JUNK` could verify if the inner verifier ignored trailing bytes.
+	sigSize    int
+	sigMaxSize int
+
 	generate    func(r io.Reader) (priv any, pub any, err error)
 	parsePriv   func(raw []byte) (any, error)
 	parsePub    func(raw []byte) (any, error)
@@ -203,6 +222,8 @@ func prehashSHAKE256_64(msg []byte) []byte {
 var ecdsaP256Ops = &traditionalOps{
 	pubSize:     65, // 0x04 || X(32) || Y(32)
 	privSize:    32, // scalar d (P-256 field size)
+	sigSize:     0,  // variable-length DER
+	sigMaxSize:  72, // SEQUENCE { INTEGER (≤33 bytes) × 2 } per RFC 5912
 	generate:    func(r io.Reader) (any, any, error) { return generateECDSA(elliptic.P256(), r) },
 	parsePriv:   func(raw []byte) (any, error) { return parseECDSAPriv(elliptic.P256(), raw) },
 	parsePub:    func(raw []byte) (any, error) { return parseECDSAPub(elliptic.P256(), raw) },
@@ -214,8 +235,10 @@ var ecdsaP256Ops = &traditionalOps{
 }
 
 var ecdsaP384Ops = &traditionalOps{
-	pubSize:     97, // 0x04 || X(48) || Y(48)
-	privSize:    48, // scalar d (P-384 field size)
+	pubSize:     97,  // 0x04 || X(48) || Y(48)
+	privSize:    48,  // scalar d (P-384 field size)
+	sigSize:     0,   // variable-length DER
+	sigMaxSize:  104, // SEQUENCE { INTEGER (≤49 bytes) × 2 } per RFC 5912
 	generate:    func(r io.Reader) (any, any, error) { return generateECDSA(elliptic.P384(), r) },
 	parsePriv:   func(raw []byte) (any, error) { return parseECDSAPriv(elliptic.P384(), raw) },
 	parsePub:    func(raw []byte) (any, error) { return parseECDSAPub(elliptic.P384(), raw) },
@@ -302,6 +325,8 @@ func ecdsaPublicFrom(priv any) (any, error) {
 var ed25519Ops = &traditionalOps{
 	pubSize:     ed25519.PublicKeySize, // 32
 	privSize:    ed25519.SeedSize,      // 32
+	sigSize:     ed25519.SignatureSize, // 64
+	sigMaxSize:  ed25519.SignatureSize, // fixed
 	generate:    generateEd25519,
 	parsePriv:   parseEd25519Priv,
 	parsePub:    parseEd25519Pub,
@@ -391,6 +416,8 @@ func ed25519Verify(pub any, mPrime, sig []byte) error {
 var ed448Ops = &traditionalOps{
 	pubSize:     ed448.PublicKeySize, // 57
 	privSize:    ed448.SeedSize,      // 57
+	sigSize:     ed448.SignatureSize, // 114
+	sigMaxSize:  ed448.SignatureSize, // fixed
 	generate:    generateEd448,
 	parsePriv:   parseEd448Priv,
 	parsePub:    parseEd448Pub,
