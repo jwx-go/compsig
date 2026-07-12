@@ -6,8 +6,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/jwx-go/ed448/v4 v4.0.3 h1:UlETPRd6yFjbSkGZn9bIK9bRpOySNzka5ZnVBxVM02w=
 github.com/jwx-go/ed448/v4 v4.0.3/go.mod h1:Qp4xWZ30Ar7YVNjO/0zAX+5FyEeg2edI1xFBO2sXXBg=
-github.com/jwx-go/mldsa/v4 v4.0.2 h1:5POgrEiFtfZLEpuTZ11rBrsoCDdOHJ3hs7zUG52dAe4=
-github.com/jwx-go/mldsa/v4 v4.0.2/go.mod h1:8aV7IRAuGmo5PGgYCcITIrYZL+aqmfq97re037hB7o8=
+github.com/jwx-go/mldsa/v4 v4.0.3 h1:HRRxzu9+7KN609eln8G2EjhwjmQ3bVPLAT3XuKdlpzc=
+github.com/jwx-go/mldsa/v4 v4.0.3/go.mod h1:KTKIAYdN6gtI33tl87Z9cAp3ABl5iHttd/DPGf158dE=
 github.com/lestrrat-go/dsig v1.3.0 h1:phjMOCXvYzhuIgn7Voe2rex8z166vGfxRxmqM25P9/Q=
 github.com/lestrrat-go/dsig v1.3.0/go.mod h1:RD2eOaidyPvpc7IJQoO3Qq52RWdy8ZcJs8lrOnoa1Kc=
 github.com/lestrrat-go/dsig-circl-ed448 v1.0.0 h1:VijftNGJryFdDVhmrLMhxdKCRPK0VLGLJOy0C3i/Gso=
