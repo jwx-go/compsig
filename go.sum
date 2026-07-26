@@ -4,8 +4,8 @@ github.com/cloudflare/circl v1.6.4 h1:pOXuDTCEYyzydgUpQ0CQz3LsinKjiSk6nNP5Lt5K64
 github.com/cloudflare/circl v1.6.4/go.mod h1:YxarevkLlbaHuWsxG6vmYNWBEsSp4pnp7j+4VljMavY=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/jwx-go/ed448/v4 v4.0.3 h1:UlETPRd6yFjbSkGZn9bIK9bRpOySNzka5ZnVBxVM02w=
-github.com/jwx-go/ed448/v4 v4.0.3/go.mod h1:Qp4xWZ30Ar7YVNjO/0zAX+5FyEeg2edI1xFBO2sXXBg=
+github.com/jwx-go/ed448/v4 v4.0.4 h1:CBEvBDHJqKtpx0ZmsxrAdUely37wKgH2Eu9Xk/Cd1kw=
+github.com/jwx-go/ed448/v4 v4.0.4/go.mod h1:Ve6tcctPjNDtoqSE3KL0po04+CnTFIyACgVZGP4DTfc=
 github.com/jwx-go/mldsa/v4 v4.0.3 h1:HRRxzu9+7KN609eln8G2EjhwjmQ3bVPLAT3XuKdlpzc=
 github.com/jwx-go/mldsa/v4 v4.0.3/go.mod h1:KTKIAYdN6gtI33tl87Z9cAp3ABl5iHttd/DPGf158dE=
 github.com/lestrrat-go/dsig v1.3.0 h1:phjMOCXvYzhuIgn7Voe2rex8z166vGfxRxmqM25P9/Q=
