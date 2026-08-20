@@ -68,7 +68,7 @@ The ML-DSA component dispatches through `jwsbb.SignWithOpts` / `jwsbb.VerifyWith
 | `dsig` (`MLDSAFamily`) | `crypto/mldsa` | `*crypto/mldsa.Options` | dsig v1.4.0 on Go 1.27, which jwx v4.4.0 relies on |
 | `jwx-go/mldsa` (`dsig.Custom`) | `filippo.io/mldsa` | `*filippo.io/mldsa.Options` | every other case |
 
-compsig stores filippo keys either way, so `mldsaSignInput` / `mldsaVerifyInput` in `mldsakey_go127.go` pick the right pair. They probe `dsig.GetAlgorithmInfo(algName).Family`, which distinguishes the two owners without this module reasoning about dependency versions, and convert the key to `crypto/mldsa` when dsig owns the name. Both libraries encode a private key as the FIPS 204 seed, so the conversion is exact and signatures are unchanged.
+compsig stores filippo keys either way, so `mldsaSignInput` / `mldsaVerifyInput` in `mldsakey_go127.go` pick the right pair. The owner is resolved once, by an `init()` in that file that reads `dsig.GetAlgorithmInfo(algName).Family` for each ML-DSA name into the `stdlibMLDSA` map. That distinguishes the two owners without this module reasoning about dependency versions. Resolving once is safe because the answer cannot change after start-up: each implementation registers from its own `init()`, an imported package's `init()` runs before the importing package's, and `dsig` refuses to register a name twice. Signing then converts the key to `crypto/mldsa` when dsig owns the name. Both libraries encode a private key as the FIPS 204 seed, so the conversion is exact and signatures are unchanged.
 
 `mldsakey_pre_go127.go` is the Go 1.26 counterpart. `crypto/mldsa` does not exist there and neither dsig's nor jwx's ML-DSA compiles in, so the filippo key always passes through untouched.
 

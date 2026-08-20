@@ -24,13 +24,31 @@ import (
 // key as the FIPS 204 seed and a public key as the encoded public key, so the
 // conversion is exact.
 
+// stdlibMLDSA records, per ML-DSA algorithm name, whether the implementation
+// registered with dsig is dsig's own crypto/mldsa one. dsig registers it under
+// MLDSAFamily while jwx-go/mldsa registers under dsig.Custom, so the family
+// tells the two apart without this package reasoning about module versions.
+var stdlibMLDSA = map[string]bool{}
+
+// Resolving the owner once is safe because it cannot change afterwards. Every
+// implementation registers from its own init(), Go runs an imported package's
+// init() before the importing package's, and dsig refuses to register a name
+// twice. This init() reads only the ML-DSA names, so it has no ordering
+// relationship with the one in compsig.go.
+func init() {
+	// The six composite algorithms share three ML-DSA names, so this writes
+	// each entry twice with the same value.
+	for _, info := range compSigAlgs {
+		dsigInfo, ok := dsig.GetAlgorithmInfo(info.mldsaAlgName)
+		stdlibMLDSA[info.mldsaAlgName] = ok && dsigInfo.Family == dsig.MLDSAFamily
+	}
+}
+
 // dsigUsesStdlibMLDSA reports whether the implementation registered for algName
-// is dsig's crypto/mldsa one. dsig registers it under MLDSAFamily, while
-// jwx-go/mldsa registers under dsig.Custom, so the family tells them apart
-// without this package having to reason about module versions.
+// is dsig's crypto/mldsa one. The map is written once during init and only
+// read afterwards, so concurrent signers share it safely.
 func dsigUsesStdlibMLDSA(algName string) bool {
-	info, ok := dsig.GetAlgorithmInfo(algName)
-	return ok && info.Family == dsig.MLDSAFamily
+	return stdlibMLDSA[algName]
 }
 
 // stdMLDSAParams returns the crypto/mldsa parameter set for an ML-DSA
