@@ -72,16 +72,14 @@ compsig stores filippo keys either way, so `mldsaSignInput` / `mldsaVerifyInput`
 
 `mldsakey_pre_go127.go` is the Go 1.26 counterpart. `crypto/mldsa` does not exist there and neither dsig's nor jwx's ML-DSA compiles in, so the filippo key always passes through untouched.
 
-#### Unreleased pins
+#### Minimum versions on Go 1.27
 
-Two requirements in `go.mod` are pseudo-versions rather than releases, because Go 1.27 does not work without them:
+Two requirements in `go.mod` carry a floor that Go 1.27 needs. Both were pseudo-versions until the releases existed; they are now ordinary versions and must not be lowered.
 
-| Module | Needed for |
-|--------|-----------|
-| `github.com/lestrrat-go/jwx/v4` | `jwsbb` handling of `dsig.MLDSAFamily`. v4.3.0 rejects it with `unsupported dsig algorithm family "ML-DSA"`. |
-| `github.com/jwx-go/mldsa/v4` | Interop mode. v4.0.4 has no stand-down probe and panics at import with `algorithm ML-DSA-44 is already registered` once dsig v1.4.0 owns the names. |
-
-Both go away once jwx v4.4.0 and the matching mldsa release exist. Replace them with the released versions then; do not leave a pseudo-version in place longer than that.
+| Module | Minimum | Needed for |
+|--------|---------|-----------|
+| `github.com/lestrrat-go/jwx/v4` | v4.4.0 | `jwsbb` handling of `dsig.MLDSAFamily`. v4.3.0 rejects it with `unsupported dsig algorithm family "ML-DSA"`. |
+| `github.com/jwx-go/mldsa/v4` | v4.0.5 | Interop mode. v4.0.4 has no stand-down probe and panics at import with `algorithm ML-DSA-44 is already registered` once dsig v1.4.0 owns the names. |
 
 ## Files
 

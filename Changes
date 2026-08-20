@@ -1,6 +1,16 @@
 Changes
 =======
 
+v4.0.5 20 August 2026
+  * Work with the native ML-DSA that jwx provides on Go 1.27. Composite
+    signatures now select the ML-DSA key type to match whichever backend is
+    registered, so a build using `crypto/mldsa` and one using
+    `filippo.io/mldsa` both sign and verify.
+  * Require `github.com/lestrrat-go/jwx/v4` v4.4.0 and
+    `github.com/jwx-go/mldsa/v4` v4.0.5. Both are minimums on Go 1.27:
+    earlier jwx rejects the ML-DSA dsig family, and earlier mldsa panics at
+    import once dsig owns the algorithm names.
+
 v4.0.4 24 July 2026
   * Bump `github.com/lestrrat-go/jwx/v4` to v4.2.0.
   * Bump `github.com/jwx-go/ed448/v4` and `github.com/jwx-go/mldsa/v4`
