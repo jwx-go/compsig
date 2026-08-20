@@ -6,7 +6,7 @@ require (
 	filippo.io/mldsa v0.0.0-20260215214346-43d0283efc3e
 	github.com/cloudflare/circl v1.6.5
 	github.com/jwx-go/ed448/v4 v4.0.4
-	github.com/jwx-go/mldsa/v4 v4.0.5-0.20260820062426-f272194d3c5d
+	github.com/jwx-go/mldsa/v4 v4.0.5-0.20260820072537-6eff5988fb79
 	github.com/lestrrat-go/dsig v1.4.0
 	github.com/lestrrat-go/jwx/v4 v4.3.1-0.20260820031344-741ca1c0cfb9
 	github.com/stretchr/testify v1.12.0

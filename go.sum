@@ -4,8 +4,8 @@ github.com/cloudflare/circl v1.6.5 h1:O64F26HEqNhznd/hrC5KZXVKYuKM2rx4deZDTc4ihQ
 github.com/cloudflare/circl v1.6.5/go.mod h1:h5LNyxAc5nTue9DS5jT+48en2PSDYt3zdGnz5OstK6c=
 github.com/jwx-go/ed448/v4 v4.0.4 h1:CBEvBDHJqKtpx0ZmsxrAdUely37wKgH2Eu9Xk/Cd1kw=
 github.com/jwx-go/ed448/v4 v4.0.4/go.mod h1:Ve6tcctPjNDtoqSE3KL0po04+CnTFIyACgVZGP4DTfc=
-github.com/jwx-go/mldsa/v4 v4.0.5-0.20260820062426-f272194d3c5d h1:qt2CN8H0ztE8RC04T2Lsv3iR790fbSJRNYOUzKzmQTA=
-github.com/jwx-go/mldsa/v4 v4.0.5-0.20260820062426-f272194d3c5d/go.mod h1:1YX1QPc1KjN/dsFCWjPWQcukGJKf0dZO/5IS6O71348=
+github.com/jwx-go/mldsa/v4 v4.0.5-0.20260820072537-6eff5988fb79 h1:Ak9aNXJMiBcCk5LwARtm6/xhmPVYlprZEsEgL6yrMAI=
+github.com/jwx-go/mldsa/v4 v4.0.5-0.20260820072537-6eff5988fb79/go.mod h1:1YX1QPc1KjN/dsFCWjPWQcukGJKf0dZO/5IS6O71348=
 github.com/lestrrat-go/dsig v1.4.0 h1:g7LUjK8cT74A5DzBXJI5HzsJuLhoYN0Wzj4nuOMIrH8=
 github.com/lestrrat-go/dsig v1.4.0/go.mod h1:I8Nddg/vN2cUl/h8N7SRRApLnNNeyZPIqLYpvpOtGGo=
 github.com/lestrrat-go/dsig-circl-ed448 v1.0.0 h1:VijftNGJryFdDVhmrLMhxdKCRPK0VLGLJOy0C3i/Gso=
