@@ -72,7 +72,16 @@ compsig stores filippo keys either way, so `mldsaSignInput` / `mldsaVerifyInput`
 
 `mldsakey_pre_go127.go` is the Go 1.26 counterpart. `crypto/mldsa` does not exist there and neither dsig's nor jwx's ML-DSA compiles in, so the filippo key always passes through untouched.
 
-Requiring `dsig` v1.4.0 for the `MLDSAFamily` constant carries a sequencing constraint. On Go 1.27 that version registers ML-DSA itself, and `jwx-go/mldsa` v4.0.4 has no stand-down probe, so it panics at import with `algorithm ML-DSA-44 is already registered`. Before this module builds on Go 1.27 it must also require an mldsa release carrying interop mode.
+#### Unreleased pins
+
+Two requirements in `go.mod` are pseudo-versions rather than releases, because Go 1.27 does not work without them:
+
+| Module | Needed for |
+|--------|-----------|
+| `github.com/lestrrat-go/jwx/v4` | `jwsbb` handling of `dsig.MLDSAFamily`. v4.3.0 rejects it with `unsupported dsig algorithm family "ML-DSA"`. |
+| `github.com/jwx-go/mldsa/v4` | Interop mode. v4.0.4 has no stand-down probe and panics at import with `algorithm ML-DSA-44 is already registered` once dsig v1.4.0 owns the names. |
+
+Both go away once jwx v4.4.0 and the matching mldsa release exist. Replace them with the released versions then; do not leave a pseudo-version in place longer than that.
 
 ## Files
 
@@ -92,11 +101,21 @@ Requiring `dsig` v1.4.0 for the `MLDSAFamily` constant carries a sequencing cons
 
 ## Build / Test
 
+On Go 1.26, `GOEXPERIMENT=jsonv2` is required (jwx v4 dependency). On Go 1.27 it must NOT be set, because that toolchain already ships `encoding/json/v2`.
+
 ```
-go test ./...
+GOEXPERIMENT=jsonv2 go test ./...   # Go 1.26
+go test ./...                       # Go 1.27
 ```
 
 Go 1.26+ (uses stdlib `crypto/sha3` and `encoding/json/v2`).
+
+| Workflow | Toolchain | ML-DSA component key type |
+|----------|-----------|---------------------------|
+| `ci.yml` | `go.mod` (Go 1.26), `GOEXPERIMENT=jsonv2` | `filippo.io/mldsa`, passed straight through |
+| `go127.yml` | Go 1.27 | `crypto/mldsa`, converted before `jwsbb` |
+
+`ci.yml` is synced from the shared companion template, so Go 1.27 coverage lives in `go127.yml` instead of being added there.
 
 ## Branch Policy
 
