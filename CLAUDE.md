@@ -57,7 +57,22 @@ The draft defers ECDSA signature serialization to LAMPS, which uses ASN.1 DER-en
 
 This module imports `github.com/jwx-go/mldsa/v4` and `github.com/jwx-go/ed448/v4` for their `init()` side effects. Their init() registers pure `ML-DSA-44/65/87` and `Ed448` with `dsig`/`jwsbb`, which the composite signer reuses for those components. ECDSA and Ed25519 are handled directly (stdlib) — ECDSA because of the DER format, Ed25519 because no companion module is needed.
 
-The ML-DSA component dispatches through `jwsbb.SignWithOpts` / `jwsbb.VerifyWithOpts` carrying `&mldsa.Options{Context: string(info.label)}`, so the per-variant context label reaches `filippo.io/mldsa`. This requires `github.com/jwx-go/mldsa` ≥ `v4.0.0-alpha3` — that release adds `SignerWithOpts` / `VerifierWithOpts` to the mldsa dsig adapter, which forwards `*mldsa.Options` to `filippo.io/mldsa.(*PrivateKey).Sign` and `filippo.io/mldsa.Verify`. The plain `jwsbb.Sign` / `jwsbb.Verify` path does not carry opts and would silently sign with `ctx=""`, breaking draft interop — do not regress to it.
+The ML-DSA component dispatches through `jwsbb.SignWithOpts` / `jwsbb.VerifyWithOpts` carrying an options value with `Context: string(info.label)`, so the per-variant context label reaches the implementation. The plain `jwsbb.Sign` / `jwsbb.Verify` path does not carry opts and would silently sign with `ctx=""`, breaking draft interop — do not regress to it.
+
+#### Two implementations answer to the ML-DSA names
+
+`jwsbb` dispatches on the algorithm name, and two different implementations can be registered under `ML-DSA-44/65/87`:
+
+| Registered by | Key type | Options type | When |
+|---------------|----------|--------------|------|
+| `dsig` (`MLDSAFamily`) | `crypto/mldsa` | `*crypto/mldsa.Options` | dsig v1.4.0 on Go 1.27, which jwx v4.4.0 relies on |
+| `jwx-go/mldsa` (`dsig.Custom`) | `filippo.io/mldsa` | `*filippo.io/mldsa.Options` | every other case |
+
+compsig stores filippo keys either way, so `mldsaSignInput` / `mldsaVerifyInput` in `mldsakey_go127.go` pick the right pair. They probe `dsig.GetAlgorithmInfo(algName).Family`, which distinguishes the two owners without this module reasoning about dependency versions, and convert the key to `crypto/mldsa` when dsig owns the name. Both libraries encode a private key as the FIPS 204 seed, so the conversion is exact and signatures are unchanged.
+
+`mldsakey_pre_go127.go` is the Go 1.26 counterpart. `crypto/mldsa` does not exist there and neither dsig's nor jwx's ML-DSA compiles in, so the filippo key always passes through untouched.
+
+Requiring `dsig` v1.4.0 for the `MLDSAFamily` constant carries a sequencing constraint. On Go 1.27 that version registers ML-DSA itself, and `jwx-go/mldsa` v4.0.4 has no stand-down probe, so it panics at import with `algorithm ML-DSA-44 is already registered`. Before this module builds on Go 1.27 it must also require an mldsa release carrying interop mode.
 
 ## Files
 
@@ -71,6 +86,8 @@ The ML-DSA component dispatches through `jwsbb.SignWithOpts` / `jwsbb.VerifyWith
 | `verifier.go` | `jws.Verifier` wrapper (unwraps JWK, delegates to dsig) |
 | `dsig.go` | `dsig.Custom` Signer/Verifier impl (computes `M'`, dispatches to components) |
 | `jwk.go` | Key importers / exporters |
+| `mldsakey_go127.go` | Picks the key and options types the registered ML-DSA implementation expects (`//go:build go1.27`) |
+| `mldsakey_pre_go127.go` | Go 1.26 counterpart, where only the filippo implementation can be registered |
 | `compsig_test.go` | Round-trip tests (6 variants) |
 
 ## Build / Test
