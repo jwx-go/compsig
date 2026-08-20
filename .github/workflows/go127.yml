@@ -1,0 +1,38 @@
+name: Go 1.27
+on:
+  pull_request:
+    branches:
+      - develop/v*
+  push:
+    branches:
+      - develop/v*
+
+# Go 1.27 ships crypto/mldsa and encoding/json/v2, so GOEXPERIMENT stays unset
+# here. Naming an experiment the toolchain already ships rebuilds the standard
+# library under a non-default configuration for no benefit.
+#
+# This is the only job that exercises the crypto/mldsa side of
+# mldsaSignInput / mldsaVerifyInput. `ci.yml` runs the go.mod toolchain, where
+# neither dsig's nor jwx's ML-DSA compiles in and the filippo key always passes
+# straight through.
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: "Test (Go 1.27)"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go127-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go127-
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.27.x"
+          check-latest: true
+      - name: Test
+        run: go test -v -race ./...

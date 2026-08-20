@@ -6,19 +6,17 @@ require (
 	filippo.io/mldsa v0.0.0-20260215214346-43d0283efc3e
 	github.com/cloudflare/circl v1.6.5
 	github.com/jwx-go/ed448/v4 v4.0.4
-	github.com/jwx-go/mldsa/v4 v4.0.4
-	github.com/lestrrat-go/dsig v1.3.0
-	github.com/lestrrat-go/jwx/v4 v4.2.0
-	github.com/stretchr/testify v1.11.1
+	github.com/jwx-go/mldsa/v4 v4.0.5-0.20260820072537-6eff5988fb79
+	github.com/lestrrat-go/dsig v1.4.0
+	github.com/lestrrat-go/jwx/v4 v4.3.1-0.20260820031344-741ca1c0cfb9
+	github.com/stretchr/testify v1.12.0
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/lestrrat-go/dsig-circl-ed448 v1.0.0 // indirect
 	github.com/lestrrat-go/option/v3 v3.0.0-alpha1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/valyala/fastjson v1.6.10 // indirect
-	golang.org/x/crypto v0.54.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

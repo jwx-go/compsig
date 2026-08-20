@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"filippo.io/mldsa"
 	"github.com/lestrrat-go/jwx/v4/jws/jwsbb"
 )
 
@@ -28,13 +27,19 @@ func (d *compSigDsig) Sign(key any, payload []byte, r io.Reader) ([]byte, error)
 
 	mPrime := composeMessage(d.info, payload)
 
-	// ML-DSA component: dispatch through jwsbb.SignWithOpts so the
-	// underlying jwx-go/mldsa adapter receives ctx=Label as required by
-	// draft-ietf-jose-pq-composite-sigs §4.2 step 3. The plain
-	// jwsbb.Sign / jwx-go/mldsa Sign path hard-codes ctx=nil and would
-	// silently produce signatures that are not interoperable with any
-	// spec-compliant implementation.
-	mldsaSig, err := jwsbb.SignWithOpts(sk.mldsa, d.info.mldsaAlgName, mPrime, &mldsa.Options{Context: string(d.info.label)}, r)
+	// ML-DSA component: dispatch through jwsbb.SignWithOpts so that whichever
+	// implementation is registered receives ctx=Label, as required by
+	// draft-ietf-jose-pq-composite-sigs §4.2 step 3. The plain jwsbb.Sign path
+	// carries no opts, hard-codes ctx="", and would silently produce
+	// signatures that no spec-compliant implementation accepts.
+	//
+	// mldsaSignInput picks the key and options shape the registered
+	// implementation expects; see mldsakey_go127.go.
+	mldsaKey, mldsaOpts, err := mldsaSignInput(sk.mldsa, d.info.mldsaAlgName, string(d.info.label))
+	if err != nil {
+		return nil, fmt.Errorf(`compsig: ml-dsa sign: %w`, err)
+	}
+	mldsaSig, err := jwsbb.SignWithOpts(mldsaKey, d.info.mldsaAlgName, mPrime, mldsaOpts, r)
 	if err != nil {
 		return nil, fmt.Errorf(`compsig: ml-dsa sign: %w`, err)
 	}
@@ -90,7 +95,11 @@ func (d *compSigDsig) Verify(key any, payload, signature []byte) error {
 	}
 
 	// Same ctx=Label as Sign — see Sign for the rationale.
-	if err := jwsbb.VerifyWithOpts(pk.mldsa, d.info.mldsaAlgName, mPrime, mldsaSig, &mldsa.Options{Context: string(d.info.label)}); err != nil {
+	mldsaKey, mldsaOpts, err := mldsaVerifyInput(pk.mldsa, d.info.mldsaAlgName, string(d.info.label))
+	if err != nil {
+		return fmt.Errorf(`compsig: ml-dsa verify: %w`, err)
+	}
+	if err := jwsbb.VerifyWithOpts(mldsaKey, d.info.mldsaAlgName, mPrime, mldsaSig, mldsaOpts); err != nil {
 		return fmt.Errorf(`compsig: ml-dsa verify: %w`, err)
 	}
 	if err := d.info.trad.verify(pk.trad, mPrime, tradSig); err != nil {
