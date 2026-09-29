@@ -79,7 +79,8 @@ Two requirements in `go.mod` carry a floor that Go 1.27 needs. Both were pseudo-
 | Module | Minimum | Needed for |
 |--------|---------|-----------|
 | `github.com/lestrrat-go/jwx/v4` | v4.4.0 | `jwsbb` handling of `dsig.MLDSAFamily`. v4.3.0 rejects it with `unsupported dsig algorithm family "ML-DSA"`. |
-| `github.com/jwx-go/mldsa/v4` | v4.0.5 | Interop mode. v4.0.4 has no stand-down probe and panics at import with `algorithm ML-DSA-44 is already registered` once dsig v1.4.0 owns the names. |
+| `github.com/jwx-go/mldsa/v4` | v4.0.6 | Every toolchain, not only Go 1.27. v4.0.5 and earlier use `*mldsa.Parameters` and fail to compile against `filippo.io/mldsa` v1.0.0. v4.0.4 also panics at import on Go 1.27 with `algorithm ML-DSA-44 is already registered` once dsig v1.4.0 owns the names. |
+| `filippo.io/mldsa` | v1.0.0 | Every toolchain. `params.go` stores `mldsa.Parameters` by value, which the earlier pseudo-version returned as a pointer. |
 
 ## Files
 

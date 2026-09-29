@@ -1,6 +1,13 @@
 Changes
 =======
 
+v4.0.6 29 September 2026
+  * Require `filippo.io/mldsa` v1.0.0 and `github.com/jwx-go/mldsa/v4`
+    v4.0.6. `filippo.io/mldsa` v1.0.0 passes `mldsa.Parameters` by value
+    instead of by pointer, and compsig v4.0.5 fails to compile once a build
+    selects it. Code that calls `filippo.io/mldsa` directly must switch from
+    `*mldsa.Parameters` to `mldsa.Parameters` when it upgrades.
+
 v4.0.5 20 August 2026
   * Work with the native ML-DSA that jwx provides on Go 1.27. Composite
     signatures now select the ML-DSA key type to match whichever backend is
