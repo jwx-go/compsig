@@ -97,7 +97,7 @@ type algInfo struct {
 	name         string
 	alg          jwa.SignatureAlgorithm
 	mldsaAlgName string // matches the algorithm name registered by jwx-go/mldsa
-	mldsaParams  *mldsa.Parameters
+	mldsaParams  mldsa.Parameters
 	mldsaSigSize int
 	mldsaPubSize int
 	label        []byte
