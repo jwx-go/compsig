@@ -3,10 +3,10 @@ module github.com/jwx-go/compsig/v4
 go 1.26.0
 
 require (
-	filippo.io/mldsa v0.0.0-20260215214346-43d0283efc3e
+	filippo.io/mldsa v1.0.0
 	github.com/cloudflare/circl v1.6.5
 	github.com/jwx-go/ed448/v4 v4.0.5
-	github.com/jwx-go/mldsa/v4 v4.0.5
+	github.com/jwx-go/mldsa/v4 v4.0.6
 	github.com/lestrrat-go/dsig v1.4.0
 	github.com/lestrrat-go/jwx/v4 v4.5.0
 	github.com/stretchr/testify v1.12.1
