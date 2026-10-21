@@ -1,6 +1,6 @@
 module github.com/jwx-go/compsig/v4
 
-go 1.26.0
+go 1.26.10
 
 require (
 	filippo.io/mldsa v1.0.0
